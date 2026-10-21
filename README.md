@@ -1,12 +1,18 @@
 # Skills
 
 A shared, version-controlled collection of personal skills for **Pi** and **Claude Code**.
-The canonical files live in `skills/`. Both tools use per-skill symlinks to those files:
+The canonical files live in `skills/`. Both tools use per-skill symlinks to those files.
+`pstack/` is a separate, Pi-only fork of an upstream skill collection.
 
 ```text
 skills/<name>/                  ← canonical instructions and supporting files
 ~/.pi/agent/skills/<name>        → <repository>/skills/<name>
 ~/.claude/skills/<name>          → <repository>/skills/<name>
+
+pstack/skills/<name>/           ← Pi-adapted fork of cursor/plugins → pstack
+~/.pi/agent/skills/pstack        → <repository>/pstack/skills     (Pi only, never Claude)
+pstack/agents/<agent>.md         ← Pi subagent definitions
+~/.pi/agent/agents/<agent>.md    → <repository>/pstack/agents/<agent>.md
 ```
 
 Editing through either tool edits this repository. There is no copy/sync step.
@@ -62,6 +68,29 @@ are version-controlled. On a fresh machine the launcher can download its pinned
 engine into `~/.impeccable/`, verifying the release checksum, or use a compatible
 engine configured via `IMPECCABLE_BIN`. First use may need network access.
 
+## pstack
+
+[`pstack/`](pstack/UPSTREAM.md) is a fork of [cursor/plugins → pstack](https://github.com/cursor/plugins/tree/main/pstack)
+by Lauren Tan, MIT licensed, vendored at v0.15.29. It is a workflow collection rather than a
+single skill: `poteto-mode` routes a task to one of 23 playbooks, which call 24 one-rule
+principle skills and about 30 other skills as their steps need them.
+
+**It is Pi-only.** The 55 skills name Pi's tools (`subagent`, `ask_user`), Pi's agents
+(`poteto-agent`, `delegate`, `scout`), and Pi's config paths. They would mislead Claude, so
+`link-skills.sh` never links them into `~/.claude`.
+
+**It is operator-invoked only.** All 55 skills set `disable-model-invocation: true`, so Pi
+filters them out of the system prompt entirely. The model cannot see or select them; each
+runs only when you type `/skill:<name>`. Keep that field on any skill you add here.
+
+Start with `/skill:poteto-mode`, or `/skill:setup-pstack` to choose the model each role
+runs on. `pstack/UPSTREAM.md` records the upstream commit, every Cursor-to-Pi substitution,
+the Cursor features that are `Skipped in Pi.`, and the known gaps. The two subagents are
+`poteto-agent` for delegates and `comment-sicko` for read-only comment review.
+
+`pstack/skills/poteto-mode/scripts/` keeps upstream's Bun tooling unchanged. `watch-pr`
+needs `gh`, and the `orch` and `check-plan` tests need `bun`.
+
 ## Install or relink
 
 Run from any working directory:
@@ -78,6 +107,8 @@ The installer:
 4. Moves conflicting entries, including stale or broken symlinks, into a unique
    `skills-backup.<timestamp>.<suffix>/` directory beside the tool's skills directory.
 5. Creates absolute symlinks to each canonical skill, printing link and backup paths.
+6. Links `pstack/skills` and each `pstack/agents/*.md` into Pi only, skipping Claude.
+   It validates `pstack/skills/poteto-mode/SKILL.md` before changing those links.
 
 Backups are outside the repository. The installer does not delete originals,
 change either tool's settings, remove unrelated skills, or modify Claude sync.
@@ -97,6 +128,11 @@ direct agents to create/import personal skills here, update this README, run the
 link installer, and check for sensitive material. This is an agent workflow rule,
 not a filesystem watcher: manual installs still need importing/relinking. Managed
 package/plugin skills and account-synced skills remain excluded unless explicitly migrated.
+
+A skill meant for Pi only can live under `pstack/` instead, which keeps it out of Claude.
+Since `pstack/` is a fork of someone else's work rather than ours, prefer adding our own
+skills under `skills/`, and treat `pstack/UPSTREAM.md` as the place to record what we
+changed and how to re-sync.
 
 1. Add `skills/<name>/SKILL.md`, using a matching lowercase, hyphenated frontmatter
    `name` and a meaningful `description`. Do not use Claude's reserved names
